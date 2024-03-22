@@ -1,0 +1,12 @@
+../Core/Src/list.c:13:1:MyListInit	16	static
+../Core/Src/list.c:21:1:MyListConnect	16	static
+../Core/Src/list.c:35:1:MyListDisconnect	16	static
+../Core/Src/list.c:49:1:MyListInsert	40	static
+../Core/Src/list.c:82:1:MyListPushBack	24	static
+../Core/Src/list.c:94:1:MyListPopBack	24	static
+../Core/Src/list.c:111:1:MyListPushFront	16	static
+../Core/Src/list.c:116:1:MyListPopFront	24	static
+../Core/Src/list.c:137:1:MyListGet	24	static
+../Core/Src/list.c:155:1:MyListIsEmpty	16	static
+../Core/Src/list.c:166:1:MyListDelete	24	static
+../Core/Src/list.c:185:1:MyListFree	24	static
