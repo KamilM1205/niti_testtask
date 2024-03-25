@@ -17,16 +17,15 @@ typedef struct
 {
   MyList_t 		*rx_list;
   MyList_t 		*tx_list;
-  UART_HandleTypeDef 	huart;
-  uint8_t 		buffer[9];
-  uint8_t 		rb[9];
+  UART_HandleTypeDef 	*huart;
+  uint8_t 		buffer[10];
   UProtoCommand_t 	*callbacks;
   size_t 		callback_count;
-  size_t 		rb_count;
+  uint8_t 		tdata[9];
 } UProto_t;
 
-void
-UProto_Init (UProto_t *up);
+UProto_t*
+UProto_Init (UART_HandleTypeDef *huart);
 void
 UProto_Receive (UProto_t *up);
 void

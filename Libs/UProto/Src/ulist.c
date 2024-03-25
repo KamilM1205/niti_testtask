@@ -65,6 +65,8 @@ MyListInsert (MyList_t *list, uint8_t *data, size_t idx)
 
   new_item = (MyListItem_t*) pvPortMalloc (sizeof(MyListItem_t));
   memcpy (&new_item->data, data, 9);
+  new_item->next = NULL;
+  new_item->prev = NULL;
 
   list->size++;
 
@@ -101,7 +103,14 @@ MyListPopBack (MyList_t *list)
     }
 
   item = MyListGet (list, list->size - 1);
-  MyListDisconnect (item->prev, item);
+  if (list->first == item)
+    {
+      list->first = NULL;
+    }
+  else
+    {
+      MyListDisconnect (item->prev, item);
+    }
   list->size--;
 
   return item;
@@ -126,10 +135,15 @@ MyListPopFront (MyList_t *list)
   MyListDisconnect (NULL, item);
   list->size--;
 
-  if (list->size > 0) {
+  if (list->size > 0)
+    {
       list->first = item->next;
-      MyListDisconnect(item, item->next);
-  }
+      MyListDisconnect (item, item->next);
+    }
+  else
+    {
+      list->first = NULL;
+    }
   return item;
 }
 
@@ -154,7 +168,7 @@ MyListGet (MyList_t *list, size_t idx)
 uint8_t
 MyListIsEmpty (MyList_t *list)
 {
-  if (list->first != NULL)
+  if (list->size > 0)
     {
       return 0;
     }

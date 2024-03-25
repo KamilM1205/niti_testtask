@@ -12,30 +12,18 @@ UProto_Error_Handler ()
     }
 }
 
-void
-UProto_Init (UProto_t *uproto)
+UProto_t*
+UProto_Init (UART_HandleTypeDef *huart)
 {
-  uproto = (UProto_t*) pvPortMalloc (sizeof(UProto_t));
+  UProto_t *uproto = (UProto_t*) pvPortMalloc (sizeof(UProto_t));
   memset (uproto, 0, sizeof(UProto_t));
 
-  uproto->huart.Instance = USART1;
-  uproto->huart.Init.BaudRate = 115200;
-  uproto->huart.Init.WordLength = UART_WORDLENGTH_8B;
-  uproto->huart.Init.StopBits = UART_STOPBITS_1;
-  uproto->huart.Init.Parity = UART_PARITY_NONE;
-  uproto->huart.Init.Mode = UART_MODE_TX_RX;
-  uproto->huart.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  uproto->huart.Init.OverSampling = UART_OVERSAMPLING_16;
+  uproto->callbacks = pvPortMalloc (sizeof(UProtoCommand_t));
+  uproto->rx_list = MyListInit();
+  uproto->tx_list = MyListInit();
+  uproto->huart = huart;
 
-  if (HAL_UART_Init (&uproto->huart) != HAL_OK)
-    {
-      UProto_Error_Handler ();
-    }
-
-  __HAL_RCC_DMA2_CLK_ENABLE();
-
-  HAL_NVIC_SetPriority (DMA2_Stream7_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ (DMA2_Stream7_IRQn);
+  return uproto;
 }
 
 uint8_t
@@ -76,27 +64,27 @@ UProto_FindSignature (UProto_t *up, uint8_t buff[9])
       uint8_t data[5];
       memcpy (&data, &buff[2], 5);
       MyListPushBack (up->rx_list, (uint8_t*)&data);
+      memset(&up->buffer, 0, 10);
     }
 }
 
 void
 UProto_Receive (UProto_t *up)
 {
-  if (up->rb_count > 0)
-    {
-      for (size_t i = 0; i < up->rb_count; i++)
-	{
-	  memmove (&up->buffer, &up->buffer[2], 8);
-	  up->buffer[8] = up->rb[i];
-	  UProto_FindSignature (up, up->buffer);
-	}
-      up->rb_count = 0;
-    }
+  UProto_FindSignature (up, up->buffer);
+//  if (up->rb_count > 0)
+//    {
+//      for (size_t i = 0; i < up->rb_count; i++)
+//	{
+//	  memmove (&up->buffer, &up->buffer[1], 8);
+//	  up->buffer[8] = up->rb[i];
+//	}
+//      up->rb_count = 0;
+//    }
 
-  if (HAL_UART_GetState (&up->huart) != HAL_UART_STATE_BUSY_RX)
+  if (HAL_UART_GetState (up->huart) != HAL_UART_STATE_BUSY_RX)
     {
-      HAL_UART_Receive_IT (&up->huart, &up->rb[up->rb_count], 1);
-      up->rb_count++;
+      HAL_UART_Receive_IT (up->huart, &up->buffer[9], 1);
     }
 
   if (!MyListIsEmpty (up->rx_list))
@@ -105,7 +93,7 @@ UProto_Receive (UProto_t *up)
 
       for (size_t i = 0; i < up->callback_count; i++)
 	{
-	  if (memcmp (&item->data, &up->callbacks[i].cmd, 5) == 0)
+	  if (memcmp (&item->data, &up->callbacks[i].cmd, 4) == 0)
 	    {
 	      up->callbacks[i].callback (up, (char*) &item->data);
 	    }
@@ -116,27 +104,28 @@ UProto_Receive (UProto_t *up)
 }
 
 void
-UProto_SendData (UProto_t *up, char data[5])
+UProto_SendData (UProto_t *up, char* data)
 {
-  MyListPushBack (up->tx_list, (uint8_t*) &data);
+  MyListPushBack (up->tx_list, (uint8_t*)data);
   UProto_Transmit (up);
 }
 
 void
 UProto_Receive_IT (UProto_t *up, UART_HandleTypeDef *huart)
 {
-  if (huart == &up->huart
+  if (huart == up->huart
       && HAL_UART_GetState (huart) != HAL_UART_STATE_BUSY_RX)
     {
-      HAL_UART_Receive_IT (huart, &up->rb[up->rb_count], 1);
-      up->rb_count++;
+      memmove (&up->buffer, &up->buffer[1], 9);
+      HAL_UART_Receive_IT (huart, &up->buffer[9], 1);
+
     }
 }
 
 void
 UProto_Transmit_IT (UProto_t *up, UART_HandleTypeDef *huart)
 {
-  if (huart == &up->huart)
+  if (huart == up->huart)
     {
       UProto_Transmit (up);
     }
@@ -145,32 +134,37 @@ UProto_Transmit_IT (UProto_t *up, UART_HandleTypeDef *huart)
 void
 UProto_Transmit (UProto_t *up)
 {
-  if (HAL_UART_GetState (&up->huart) != HAL_UART_STATE_BUSY_TX
+  if (HAL_UART_GetState (up->huart) != HAL_UART_STATE_BUSY_TX
       && !MyListIsEmpty (up->tx_list))
     {
-      uint8_t tdata[9];
       MyListItem_t *item = MyListPopFront (up->tx_list);
 
-      tdata[0] = 0x01;
-      tdata[1] = 0x02;
-      memcpy (&tdata[2], &item->data, 5);
-      tdata[8] = CountCRC8 (&tdata[2]);
-      tdata[9] = 0x5A;
+      up->tdata[0] = 0x01;
+      up->tdata[1] = 0x02;
+      memcpy (&up->tdata[2], &item->data, 5);
+      up->tdata[7] = CountCRC8 (&up->tdata[2]);
+      up->tdata[8] = 0x5A;
 
       vPortFree (item);
-      HAL_UART_Transmit_DMA (&up->huart, tdata, 9);
+      HAL_UART_Transmit_DMA (up->huart, (uint8_t*)&up->tdata, 9);
     }
 }
 
 void
-UProto_AddCallback (UProto_t *up, char cmd[5], callback_ptr cb)
+UProto_AddCallback (UProto_t *up, char* cmd, callback_ptr cb)
 {
-  UProtoCommand_t c =
-    { .cmd = (uint8_t) cmd[0], .callback = cb };
+  UProtoCommand_t c = {0};
+  memcpy(&c.cmd, cmd, strlen(cmd));
+  c.callback = cb;
+
+  up->callback_count ++;
+
   UProtoCommand_t *cmds = (UProtoCommand_t*) pvPortMalloc (
       sizeof(UProtoCommand_t) * up->callback_count);
-  memcpy (&cmds, up->callbacks, sizeof(UProtoCommand_t) * up->callback_count);
+
+  memcpy (cmds, up->callbacks, sizeof(UProtoCommand_t) * up->callback_count);
   cmds[up->callback_count - 1] = c;
+
   vPortFree (up->callbacks);
   up->callbacks = cmds;
 }

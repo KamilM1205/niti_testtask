@@ -21,7 +21,6 @@ typedef struct MyListItem
 typedef struct MyList
 {
   MyListItem_t *first;
-  MyListItem_t *last;
   size_t size;
 } MyList_t;
 
