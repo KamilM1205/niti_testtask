@@ -1,0 +1,10 @@
+uproto.c:6:1:UProto_Error_Handler	1
+uproto.c:16:1:UProto_Init	2
+uproto.c:42:1:CountCRC8	4
+uproto.c:67:1:UProto_FindSignature	5
+uproto.c:83:1:UProto_Receive	7
+uproto.c:119:1:UProto_SendData	1
+uproto.c:126:1:UProto_Receive_IT	3
+uproto.c:137:1:UProto_Transmit_IT	2
+uproto.c:146:1:UProto_Transmit	3
+uproto.c:166:1:UProto_AddCallback	1

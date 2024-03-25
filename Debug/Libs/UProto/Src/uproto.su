@@ -1,0 +1,10 @@
+../Libs/UProto/Src/uproto.c:6:1:UProto_Error_Handler	4	static,ignoring_inline_asm
+../Libs/UProto/Src/uproto.c:16:1:UProto_Init	24	static
+../Libs/UProto/Src/uproto.c:42:1:CountCRC8	32	static
+../Libs/UProto/Src/uproto.c:67:1:UProto_FindSignature	24	static
+../Libs/UProto/Src/uproto.c:83:1:UProto_Receive	32	static
+../Libs/UProto/Src/uproto.c:119:1:UProto_SendData	16	static
+../Libs/UProto/Src/uproto.c:126:1:UProto_Receive_IT	16	static
+../Libs/UProto/Src/uproto.c:137:1:UProto_Transmit_IT	16	static
+../Libs/UProto/Src/uproto.c:146:1:UProto_Transmit	32	static
+../Libs/UProto/Src/uproto.c:166:1:UProto_AddCallback	48	static

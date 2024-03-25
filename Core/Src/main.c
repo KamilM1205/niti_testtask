@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include <string.h>
 #include "queue.h"
+#include "uproto.h"
 
 /* USER CODE END Includes */
 
@@ -79,22 +80,8 @@ const osThreadAttr_t sendDataTask_attributes =
   { .name = "sendDataTask", .stack_size = 128 * 4, .priority =
       (osPriority_t) osPriorityNormal, };
 
-osThreadId_t handleDataTaskHandle;
-const osThreadAttr_t handleDataTask_attributes =
-  { .name = "handleDataTask", .stack_size = 128 * 4, .priority =
-      (osPriority_t) osPriorityHigh, };
-
 /* Data receiving variables */
-rx_data_t tmp;
-uint8_t data_buf[9]; /* Buffer for recived data */
-uint8_t data_recv_flag; /* True if we handled start bytes */
-uint8_t check_sum; /* Check sum of received bytes */
-uint8_t add_item_flag; /* If true we allocating new item to list */
-
-QueueHandle_t rx_queue_handle;
-QueueHandle_t tx_queue_handle;
-
-uint8_t send_data;
+UProto_t up;
 volatile uint8_t ping;
 
 /* USER CODE END PV */
@@ -121,8 +108,12 @@ void
 ReceiveDataTask (void *arg);
 void
 SendDataTask (void *arg);
+
 void
-HandleDataTask (void *arg);
+echo_cmd(void*, char*);
+
+void
+led_cmd(void*, char*);
 
 /* USER CODE END PFP */
 
@@ -140,15 +131,9 @@ main (void)
 {
   /* USER CODE BEGIN 1 */
 
-  send_data = 1;
+  UProto_Init(&up);
 
-//  rx_queue_handle = xQueueCreateStatic(RX_QUEUE_SIZE, RX_ITEM_SIZE,
-//				       &rx_queue_storage[0], &rx_queue_buff);
-//  tx_queue_handle = xQueueCreateStatic(TX_QUEUE_SIZE, TX_ITEM_SIZE,
-//				       &tx_queue_storage[0], &tx_queue_buff);
-
-  rx_queue_handle = xQueueCreate(RX_QUEUE_SIZE, RX_ITEM_SIZE);
-  tx_queue_handle = xQueueCreate(TX_QUEUE_SIZE, TX_ITEM_SIZE);
+  UProto_AddCallback(&up, "ech", echo_cmd);
 
   /* USER CODE END 1 */
 
@@ -208,8 +193,6 @@ main (void)
   pingTaskHandle = osThreadNew (PingTask, NULL, &pingTask_attributes);
   sendDataTaskHandle = osThreadNew (SendDataTask, NULL,
 				    &sendDataTask_attributes);
-  handleDataTaskHandle = osThreadNew (HandleDataTask, NULL,
-				      &handleDataTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -425,33 +408,18 @@ MX_GPIO_Init (void)
  * @retval None
  */
 
-uint8_t
-count_check_sum (uint8_t *data, size_t size)
-{
-  check_sum = 0;
-  for (int i = 0; i < size; i++)
-    {
-      check_sum ^= data[i];
-    }
-
-  return check_sum;
-}
-
 void
 PingTask (void *arg)
 {
-  tx_data_t data =
-    { .data =
-      { 0x01, 0x02, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x5A }, };
+  char data[5] = {0};
 
   for (;;)
     {
       if (ping != 0)
 	{
-	  memmove (&data.data[2], &"png", 3);
-	  data.data[6] = HAL_GPIO_ReadPin (LED13_GPIO_Port, LED13_Pin);
-	  data.data[7] = count_check_sum (&data.data[2], 5);
-	  xQueueSendToBack(tx_queue_handle, &data, portMAX_DELAY);
+	  memmove (&data[0], &"png", 3);
+	  data[5] = HAL_GPIO_ReadPin (LED13_GPIO_Port, LED13_Pin);
+	  UProto_SendData(&up, (char*)&data);
 	  ping--;
 	}
       osDelay (1);
@@ -461,82 +429,37 @@ PingTask (void *arg)
 void
 SendDataTask (void *arg)
 {
-  tx_data_t item;
-
-  HAL_UART_Transmit_DMA (&huart1, (uint8_t*) "System started\n", 15);
-  for (;;)
+  for(;;)
     {
-      if (send_data != 0)
-	{
-	  if (xQueueReceive (tx_queue_handle, &item, 0) == pdTRUE)
-	    {
-	      HAL_UART_Transmit_DMA (&huart1, (uint8_t*) &item.data, 9);
-	      send_data = 0;
-	    }
-	}
-      osDelay (1);
+      UProto_Transmit(&up);
+      osDelay(10);
     }
 }
 
 /* Test data to send: 01026c656400006d5a 01 02 65 63 68 00 65 0B 5A*/
-
-void
-HandleDataTask (void *arg)
+void echo_cmd(void *up, char *cmd)
 {
-  uint8_t data[9] =
-    { 0x01, 0x02, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x5A };
-  rx_data_t item;
-  char cmd[5];
+  char data[5] = {0x0, 0x0, 0x0, 0x0, cmd[4]};
+  UProto_SendData(up, data);
+}
 
-  for (;;)
-    {
-      xQueueReceive (rx_queue_handle, &item, portMAX_DELAY);
-      memcpy (&cmd, item.data, 4);
-      if (strcmp (cmd, "ech") == 0)
-	{
-	  data[2] = item.data[6];
-	  data[7] = count_check_sum (&data[2], 5);
-	  xQueueSendToBack(tx_queue_handle, &item, portMAX_DELAY);
-	}
-      if (strcmp (cmd, "led") == 0)
-	{
-	  HAL_GPIO_TogglePin (LED13_GPIO_Port, LED13_Pin);
-	}
+void led_cmd(void *up, char *cmd)
+{
+  UNUSED(cmd);
 
-      osDelay (1);
-    }
+  HAL_GPIO_TogglePin(LED13_GPIO_Port, LED13_Pin);
 }
 
 void
 HAL_UART_RxCpltCallback (UART_HandleTypeDef *huart)
 {
-  if (huart == &huart1)
-    {
-      BaseType_t xHigherPriotity;
-
-      if (data_buf[0] == 0x01 && data_buf[1] == 0x02 && data_buf[8] == 0x5A)
-	{
-	  if (data_buf[7] != count_check_sum (&data_buf[2], 5))
-	    {
-	      goto end;
-	    }
-
-	  memcpy (&tmp.data, &data_buf[2], 5);
-	  xQueueSendToBackFromISR(rx_queue_handle, &tmp, &xHigherPriotity);
-	  portYIELD_FROM_ISR(xHigherPriotity);
-	}
-
-end:  HAL_UART_Receive_IT (&huart1, (uint8_t*) &data_buf, 9);
-    }
+  UProto_Receive_IT(&up, huart);
 }
 
 void
 HAL_UART_TxCpltCallback (UART_HandleTypeDef *huart)
 {
-  if (huart == &huart1)
-    {
-      send_data = 1;
-    }
+  UProto_Transmit_IT(&up, huart);
 }
 
 /* USER CODE END Header_StartDefaultTask */

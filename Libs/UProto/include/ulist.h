@@ -5,15 +5,15 @@
  *      Author: Kamil
  */
 
-#ifndef INC_LIST_H_
-#define INC_LIST_H_
+#ifndef _ULIST_H_
+#define _ULIST_H_
 
 #include <stdint.h>
 #include <stdlib.h>
 
 typedef struct MyListItem
 {
-  uint8_t data[9];
+  uint8_t data[5];
   struct MyListItem *next;
   struct MyListItem *prev;
 } MyListItem_t;
@@ -50,4 +50,4 @@ MyListDelete (MyList_t *list, size_t idx);
 void
 MyListFree (MyList_t *list);
 
-#endif /* INC_LIST_H_ */
+#endif /* _ULIST_H_ */
