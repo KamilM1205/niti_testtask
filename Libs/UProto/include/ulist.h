@@ -13,7 +13,7 @@
 
 typedef struct MyListItem
 {
-  uint8_t data[5];
+  uint8_t *data;
   struct MyListItem *next;
   struct MyListItem *prev;
 } MyListItem_t;
@@ -21,11 +21,12 @@ typedef struct MyListItem
 typedef struct MyList
 {
   MyListItem_t *first;
+  size_t data_size;
   size_t size;
 } MyList_t;
 
 MyList_t*
-MyListInit (void);
+MyListInit (size_t data_size);
 void
 MyListConnect (MyListItem_t *a, MyListItem_t *b);
 void
@@ -45,7 +46,7 @@ MyListGet (MyList_t *list, size_t idx);
 uint8_t
 MyListIsEmpty (MyList_t *list);
 void
-MyListDelete (MyList_t *list, size_t idx);
+MyListDelete (MyListItem_t *item);
 void
 MyListFree (MyList_t *list);
 

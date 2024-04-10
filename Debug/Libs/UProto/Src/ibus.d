@@ -1,5 +1,5 @@
-Libs/UProto/Src/uproto.o: ../Libs/UProto/Src/uproto.c \
- C:/Users/Kamil/Documents/ST_Projects/NITI_TestTask/Libs/UProto/include/uproto.h \
+Libs/UProto/Src/ibus.o: ../Libs/UProto/Src/ibus.c \
+ C:/Users/Kamil/Documents/ST_Projects/NITI_TestTask/Libs/UProto/include/ibus.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
  ../Core/Inc/stm32f4xx_hal_conf.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
@@ -40,7 +40,7 @@ Libs/UProto/Src/uproto.o: ../Libs/UProto/Src/uproto.c \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h
-C:/Users/Kamil/Documents/ST_Projects/NITI_TestTask/Libs/UProto/include/uproto.h:
+C:/Users/Kamil/Documents/ST_Projects/NITI_TestTask/Libs/UProto/include/ibus.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:

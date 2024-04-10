@@ -10,10 +10,11 @@
 #include <string.h>
 
 MyList_t*
-MyListInit (void)
+MyListInit (size_t data_size)
 {
   MyList_t *list = (MyList_t*) pvPortMalloc (sizeof(MyList_t));
   memset (list, 0, sizeof(MyList_t));
+  list->data_size = data_size;
   return list;
 }
 
@@ -64,7 +65,8 @@ MyListInsert (MyList_t *list, uint8_t *data, size_t idx)
     }
 
   new_item = (MyListItem_t*) pvPortMalloc (sizeof(MyListItem_t));
-  memcpy (&new_item->data, data, 9);
+  new_item->data = (uint8_t*) pvPortMalloc (list->data_size);
+  memcpy (new_item->data, data, list->data_size);
   new_item->next = NULL;
   new_item->prev = NULL;
 
@@ -121,6 +123,7 @@ MyListPushFront (MyList_t *list, uint8_t *data)
 {
   MyListInsert (list, data, 0);
 }
+
 MyListItem_t*
 MyListPopFront (MyList_t *list)
 {
@@ -177,21 +180,14 @@ MyListIsEmpty (MyList_t *list)
 }
 
 void
-MyListDelete (MyList_t *list, size_t idx)
+MyListDelete (MyListItem_t *item)
 {
-  MyListItem_t *item;
-
-  if (idx >= list->size)
+  if (item == NULL)
     {
       return;
     }
 
-  item = list->first;
-
-  MyListConnect (item->prev, item->next);
-
-  list->size--;
-
+  vPortFree (item->data);
   vPortFree (item);
 }
 
@@ -206,6 +202,7 @@ MyListFree (MyList_t *list)
   do
     {
       next = item->next;
+      vPortFree (item->data);
       vPortFree (item);
       item = next;
     }

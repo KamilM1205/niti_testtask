@@ -15,8 +15,23 @@
  *
  ******************************************************************************
  */
+
+/*
+ * swa - ch7
+ * swb - ch8
+ * swc - ch9
+ * swd - ch10
+ * vra - ch5
+ * vrb - ch6
+ * ljvert - ch1
+ * ljhoriz - ch2
+ * rjvert - ch3
+ * rjhoriz - ch4
+ */
+
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <ibus.h>
 #include "main.h"
 #include "cmsis_os.h"
 
@@ -24,7 +39,6 @@
 /* USER CODE BEGIN Includes */
 #include <string.h>
 #include "queue.h"
-#include "uproto.h"
 
 /* USER CODE END Includes */
 
@@ -66,8 +80,7 @@ const osThreadAttr_t sendDataTask_attributes =
       (osPriority_t) osPriorityNormal, };
 
 /* Data receiving variables */
-UProto_t *up;
-volatile uint8_t ping;
+IBus_t *ibus;
 
 /* USER CODE END PV */
 
@@ -82,17 +95,13 @@ void StartDefaultTask(void *argument);
 /* USER CODE BEGIN PFP */
 
 void
-PingTask (void *arg);
-void
 ReceiveDataTask (void *arg);
-void
-SendDataTask (void *arg);
 
 void
-echo_cmd(void*, char*);
+RJVert(void *ibus, uint16_t data);
 
 void
-led_cmd(void*, char*);
+SWA(void *ibus, uint16_t data);
 
 /* USER CODE END PFP */
 
@@ -133,10 +142,10 @@ int main(void)
   MX_TIM1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  up = UProto_Init(&huart1);
+  ibus = IBUS_Init(&huart1);
 
-  UProto_AddCallback(up, "ech", echo_cmd);
-  UProto_AddCallback(up, "led", led_cmd);
+  IBUS_AddCallback(ibus, CH3, RJVert);
+  //IBUS_AddCallback(ibus, CH7, SWA);
 
   HAL_GPIO_WritePin (LED13_GPIO_Port, LED13_Pin, RESET);
 
@@ -168,9 +177,6 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  pingTaskHandle = osThreadNew (PingTask, NULL, &pingTask_attributes);
-  sendDataTaskHandle = osThreadNew (SendDataTask, NULL,
-				    &sendDataTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -377,57 +383,35 @@ static void MX_GPIO_Init(void)
  */
 
 void
-PingTask (void *arg)
+RJVert(void* ibus, uint16_t data)
 {
-  char data[5] = {0};
-
-  for (;;)
+  if (data > IBUS_JOY_MAX - 50 && data < IBUS_JOY_MAX)
     {
-      if (ping != 0)
-	{
-	  memmove (&data[0], &"png", 3);
-	  data[5] = HAL_GPIO_ReadPin (LED13_GPIO_Port, LED13_Pin);
-	  UProto_SendData(up, (char*)&data);
-	  ping--;
-	}
-      osDelay (10);
+      HAL_GPIO_WritePin(LED13_GPIO_Port, LED13_Pin, SET);
+    }
+  else
+    {
+      HAL_GPIO_WritePin(LED13_GPIO_Port, LED13_Pin, RESET);
     }
 }
 
 void
-SendDataTask (void *arg)
+SWA(void* ibus, uint16_t data)
 {
-  for(;;)
+  if (data == IBUS_SWITCH_OFF)
     {
-      UProto_Transmit(up);
-      osDelay(10);
+      HAL_GPIO_WritePin(LED13_GPIO_Port, LED13_Pin, RESET);
     }
-}
-
-/* Test data to send: led: 01 02 6c 65 64 00 00 2c 5a echo: 01 02 65 63 68 00 65 fd 5A*/
-void echo_cmd(void *up, char *cmd)
-{
-  char data[5] = {0x0, 0x0, 0x0, 0x0, cmd[4]};
-  UProto_SendData((UProto_t*)up, data);
-}
-
-void led_cmd(void *up, char *cmd)
-{
-  UNUSED(cmd);
-
-  HAL_GPIO_TogglePin(LED13_GPIO_Port, LED13_Pin);
+  else
+    {
+      HAL_GPIO_WritePin(LED13_GPIO_Port, LED13_Pin, SET);
+    }
 }
 
 void
 HAL_UART_RxCpltCallback (UART_HandleTypeDef *huart)
 {
-  UProto_Receive_IT(up, huart);
-}
-
-void
-HAL_UART_TxCpltCallback (UART_HandleTypeDef *huart)
-{
-  UProto_Transmit_IT(up, huart);
+  IBUS_Receive_IT(ibus, huart);
 }
 
 /* USER CODE END Header_StartDefaultTask */
@@ -437,7 +421,7 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for (;;)
     {
-      UProto_Receive(up);
+      IBUS_Receive(ibus);
       osDelay (10);
     }
   /* USER CODE END 5 */

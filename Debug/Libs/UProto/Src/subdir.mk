@@ -5,16 +5,16 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../Libs/UProto/Src/ulist.c \
-../Libs/UProto/Src/uproto.c 
+../Libs/UProto/Src/ibus.c \
+../Libs/UProto/Src/ulist.c 
 
 OBJS += \
-./Libs/UProto/Src/ulist.o \
-./Libs/UProto/Src/uproto.o 
+./Libs/UProto/Src/ibus.o \
+./Libs/UProto/Src/ulist.o 
 
 C_DEPS += \
-./Libs/UProto/Src/ulist.d \
-./Libs/UProto/Src/uproto.d 
+./Libs/UProto/Src/ibus.d \
+./Libs/UProto/Src/ulist.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
@@ -24,7 +24,7 @@ Libs/UProto/Src/%.o Libs/UProto/Src/%.su: ../Libs/UProto/Src/%.c Libs/UProto/Src
 clean: clean-Libs-2f-UProto-2f-Src
 
 clean-Libs-2f-UProto-2f-Src:
-	-$(RM) ./Libs/UProto/Src/ulist.d ./Libs/UProto/Src/ulist.o ./Libs/UProto/Src/ulist.su ./Libs/UProto/Src/uproto.d ./Libs/UProto/Src/uproto.o ./Libs/UProto/Src/uproto.su
+	-$(RM) ./Libs/UProto/Src/ibus.d ./Libs/UProto/Src/ibus.o ./Libs/UProto/Src/ibus.su ./Libs/UProto/Src/ulist.d ./Libs/UProto/Src/ulist.o ./Libs/UProto/Src/ulist.su
 
 .PHONY: clean-Libs-2f-UProto-2f-Src
 

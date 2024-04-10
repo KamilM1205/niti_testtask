@@ -1,0 +1,7 @@
+../Libs/UProto/Src/ibus.c:6:1:UProto_Error_Handler	4	static,ignoring_inline_asm
+../Libs/UProto/Src/ibus.c:16:1:IBUS_Init	24	static
+../Libs/UProto/Src/ibus.c:29:1:isValidCRC	32	static
+../Libs/UProto/Src/ibus.c:43:1:IBUS_FindSignature	56	static
+../Libs/UProto/Src/ibus.c:60:1:IBUS_Receive	32	static
+../Libs/UProto/Src/ibus.c:88:1:IBUS_Receive_IT	16	static
+../Libs/UProto/Src/ibus.c:99:1:IBUS_AddCallback	40	static
